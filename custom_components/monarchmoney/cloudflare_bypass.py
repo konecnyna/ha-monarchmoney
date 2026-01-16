@@ -5,11 +5,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import ssl
+import sys
 from typing import Any, Optional
 from functools import partial
 
 import cloudscraper
 from monarchmoney import LoginFailedException, RequireMFAException
+
+from .ssl_adapter import apply_ssl_adapter
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +41,17 @@ class CloudflareBypassMonarchMoney:
             },
             delay=10  # Delay for solving Cloudflare challenges
         )
+
+        # Apply custom SSL adapter to resolve 525 SSL handshake errors
+        try:
+            apply_ssl_adapter(self._scraper)
+            _LOGGER.debug(
+                f"Applied custom SSL adapter - "
+                f"Python {sys.version_info.major}.{sys.version_info.minor}, "
+                f"OpenSSL {ssl.OPENSSL_VERSION}"
+            )
+        except Exception as e:
+            _LOGGER.warning(f"Failed to apply custom SSL adapter: {e}, continuing with defaults")
 
         self._headers = {
             "Accept": "application/json",
@@ -114,10 +129,15 @@ class CloudflareBypassMonarchMoney:
                 raise LoginFailedException("Rate limited by Monarch Money API")
 
             if response.status_code == 525:
-                _LOGGER.error("Received 525 SSL handshake error - Cloudflare protection may be too strict")
+                _LOGGER.error(
+                    f"525 SSL handshake failed during login. "
+                    f"Environment: Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}, "
+                    f"OpenSSL {ssl.OPENSSL_VERSION}. "
+                    f"This indicates SSL/TLS negotiation failure between Cloudflare and origin server."
+                )
                 raise LoginFailedException(
-                    "SSL handshake failed with Cloudflare. This may indicate very strict protection. "
-                    "Response text: " + response.text[:500]
+                    "SSL handshake failed (525). The custom SSL configuration could not establish "
+                    "a secure connection. Please check Home Assistant logs for SSL details."
                 )
 
             if response.status_code != 200:
@@ -182,8 +202,14 @@ class CloudflareBypassMonarchMoney:
                 raise LoginFailedException("Rate limited by Monarch Money API")
 
             if response.status_code == 525:
-                _LOGGER.error("Received 525 SSL handshake error during MFA")
-                raise LoginFailedException("SSL handshake failed with Cloudflare during MFA")
+                _LOGGER.error(
+                    f"525 SSL handshake failed during MFA. "
+                    f"Environment: Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}, "
+                    f"OpenSSL {ssl.OPENSSL_VERSION}"
+                )
+                raise LoginFailedException(
+                    "SSL handshake failed (525) during MFA. Please check Home Assistant logs for SSL details."
+                )
 
             if response.status_code != 200:
                 error_text = response.text if response.content else "Unknown error"
@@ -240,8 +266,14 @@ class CloudflareBypassMonarchMoney:
                 raise LoginFailedException("Authentication expired or invalid")
 
             if response.status_code == 525:
-                _LOGGER.error("Received 525 SSL handshake error during GraphQL query")
-                raise LoginFailedException("SSL handshake failed with Cloudflare during query")
+                _LOGGER.error(
+                    f"525 SSL handshake failed during GraphQL query. "
+                    f"Environment: Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}, "
+                    f"OpenSSL {ssl.OPENSSL_VERSION}"
+                )
+                raise LoginFailedException(
+                    "SSL handshake failed (525) during data fetch. Please check Home Assistant logs for SSL details."
+                )
 
             if response.status_code != 200:
                 error_text = response.text if response.content else "Unknown error"
