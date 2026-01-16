@@ -14,10 +14,10 @@
   "quality_scale": "silver",
   "requirements": [
     "monarchmoney==0.1.15",
-    "curl-cffi==0.7.0",
+    "cloudscraper==1.2.71",
     "pyotp==2.9.0"
   ],
   "ssdp": [],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "zeroconf": []
 }
