@@ -16,8 +16,9 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from monarchmoney import MonarchMoney, RequireMFAException
+from monarchmoney import RequireMFAException
 
+from .cloudflare_bypass import CloudflareBypassMonarchMoney
 from .const import (
     CONF_MFA_SECRET,
     DEFAULT_SCAN_INTERVAL,
@@ -36,7 +37,7 @@ class MonarchCoordinator(DataUpdateCoordinator):
         """Initialize the coordinator."""
         self._hass = hass
         self._config_entry = config_entry
-        self._api = MonarchMoney()
+        self._api = CloudflareBypassMonarchMoney()
         self._auth_lock = (
             asyncio.Lock()
         )  # Prevent concurrent re-authentication attempts
@@ -155,9 +156,9 @@ class MonarchCoordinator(DataUpdateCoordinator):
 
                 # Create a fresh API instance for re-authentication to avoid state issues
                 _LOGGER.debug(
-                    "Creating fresh MonarchMoney instance for re-authentication"
+                    "Creating fresh CloudflareBypassMonarchMoney instance for re-authentication"
                 )
-                fresh_api = MonarchMoney()
+                fresh_api = CloudflareBypassMonarchMoney()
 
                 if mfa_secret and mfa_secret.strip():
                     _LOGGER.debug("Using stored MFA secret for authentication")

@@ -12,8 +12,9 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlowResult, OptionsF
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
-from monarchmoney import MonarchMoney, RequireMFAException, LoginFailedException
+from monarchmoney import RequireMFAException, LoginFailedException
 
+from .cloudflare_bypass import CloudflareBypassMonarchMoney
 from .const import (
     CONF_MFA_CODE,
     CONF_MFA_SECRET,
@@ -111,7 +112,7 @@ class MonarchConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _test_connection_and_set_token(self) -> None:
         """Test connection and save session token."""
-        api = MonarchMoney()
+        api = CloudflareBypassMonarchMoney()
 
         try:
             # Try login with MFA secret if provided
@@ -222,7 +223,7 @@ class MonarchConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _test_mfa_and_set_token(self) -> None:
         """Test MFA code and save session token."""
         try:
-            api = MonarchMoney()
+            api = CloudflareBypassMonarchMoney()
             await api.multi_factor_authenticate(
                 self._user_input[CONF_EMAIL],
                 self._user_input[CONF_PASSWORD],
