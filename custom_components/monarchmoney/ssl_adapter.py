@@ -3,14 +3,19 @@
 This module provides a custom SSL/TLS context configuration to resolve
 HTTP 525 SSL handshake failures when connecting to Monarch Money API
 through Cloudflare protection.
+
+KNOWN ISSUE: OpenSSL 3.5.0+ has incompatibility with Cloudflare causing 525 errors.
+Workaround: Set environment variable MONARCHMONEY_DISABLE_SSL_VERIFY=1
 """
 
 import logging
+import os
 import ssl
 from typing import Any
 
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
+import urllib3
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,10 +52,28 @@ def create_custom_ssl_context() -> ssl.SSLContext:
 
     For Python 3.13+ with OpenSSL 3.5+, uses aggressive compatibility settings.
 
+    WORKAROUND for OpenSSL 3.5.0+ incompatibility with Cloudflare:
+    Set MONARCHMONEY_DISABLE_SSL_VERIFY=1 environment variable to disable SSL verification.
+
     Returns:
         ssl.SSLContext: Configured SSL context for use with urllib3
     """
-    _LOGGER.info("Creating custom SSL context for Cloudflare compatibility")
+    _LOGGER.info(f"Creating custom SSL context - OpenSSL: {ssl.OPENSSL_VERSION}")
+
+    # Check for OpenSSL 3.5+ workaround
+    disable_ssl_verify = os.getenv("MONARCHMONEY_DISABLE_SSL_VERIFY", "0") == "1"
+
+    if disable_ssl_verify:
+        _LOGGER.warning(
+            "⚠️  SSL VERIFICATION DISABLED via MONARCHMONEY_DISABLE_SSL_VERIFY environment variable. "
+            "This is a workaround for OpenSSL 3.5+ incompatibility with Cloudflare. "
+            "Your connection is NOT SECURE. Only use this temporarily."
+        )
+        # Disable urllib3 SSL warnings
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        context = ssl._create_unverified_context()
+        _LOGGER.info("Created unverified SSL context (SSL verification disabled)")
+        return context
 
     # Start with urllib3's default context (based on Python's ssl.create_default_context)
     context = create_urllib3_context()
