@@ -12,7 +12,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlowResult, OptionsF
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
-from monarchmoney import MonarchMoney, RequireMFAException, LoginFailedException
+from monarchmoney import RequireMFAException, LoginFailedException
 
 from .const import (
     CONF_MFA_CODE,
@@ -24,6 +24,7 @@ from .const import (
     VALUES_SCAN_INTERVAL,
     VALUES_TIMEOUT,
 )
+from .monarch_client import MonarchMoney
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -16,7 +16,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from monarchmoney import MonarchMoney, RequireMFAException
+from monarchmoney import RequireMFAException
 
 from .const import (
     CONF_MFA_SECRET,
@@ -24,6 +24,7 @@ from .const import (
     DEFAULT_TIMEOUT,
     DOMAIN,
 )
+from .monarch_client import MonarchMoney
 
 PLATFORMS = ["sensor"]
 _LOGGER = logging.getLogger(__name__)
